@@ -28,14 +28,13 @@ export default function ChalisaReader() {
     setVolume, 
     isMuted, 
     toggleMute,
-    playbackRate,
-    setPlaybackRate,
     audioRef,
   } = useAudioPlayer();
 
   // The teleprompter's scroll position is derived directly from the audio's
-  // live playback position, so speed changes (via playbackRate) and the
-  // scroll always stay perfectly in sync -- no independent timer to drift.
+  // live playback position at a fixed 1x rate, so it always stays perfectly
+  // in sync -- no independent timer to drift, and no speed control to
+  // introduce a mismatch between what's shown and what's playing.
   const { isFollowing, resync } = useSyncedScroll(scrollRef, audioRef, audioPlaying);
 
   const { query, setQuery, results } = useSearch();
@@ -211,14 +210,8 @@ export default function ChalisaReader() {
               >
                 <LocateFixed className={cn("w-5 h-5", !isFollowing && "text-primary animate-pulse")} />
               </Button>
-              <span className="text-xs text-muted-foreground shrink-0">गति</span>
-              <Slider
-                value={[playbackRate]}
-                onValueChange={([v]) => setPlaybackRate(v)}
-                min={0.5} max={2} step={0.1}
-                className="flex-1"
-              />
-              <div className="flex items-center gap-1.5 shrink-0 w-20">
+              <span className="text-xs text-muted-foreground shrink-0">यह मूल गति पर चलता है</span>
+              <div className="flex items-center gap-1.5 shrink-0 w-20 ml-auto">
                 <Volume2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 <Slider
                   value={[isMuted ? 0 : volume]}

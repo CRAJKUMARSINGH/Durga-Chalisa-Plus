@@ -7,8 +7,8 @@ const RESUME_DELAY_MS = 4000;
 /**
  * Drives the teleprompter's scroll position directly from the audio's
  * current playback position (currentTime / duration), so the text always
- * matches the chant's actual speed -- including when playbackRate changes --
- * with no independent timer that can drift out of sync.
+ * matches the chant's actual (fixed, unmodified) speed, with no independent
+ * timer that can drift out of sync.
  *
  * The reader can freely scroll up or down at any time (wheel, touch, drag).
  * A manual scroll pauses auto-follow for a few seconds so it doesn't fight

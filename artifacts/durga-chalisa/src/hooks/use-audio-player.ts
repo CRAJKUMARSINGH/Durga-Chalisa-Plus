@@ -10,7 +10,6 @@ export function useAudioPlayer() {
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0); // 0 to 1
-  const [playbackRate, setPlaybackRate] = useState(1);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -68,14 +67,6 @@ export function useAudioPlayer() {
     }
   }, [volume, isMuted]);
 
-  // Keep the teleprompter's scroll speed tied 1:1 to the chant's actual speed.
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.playbackRate = playbackRate;
-    }
-  }, [playbackRate]);
-
   const togglePlayPause = useCallback(() => {
     setIsPlaying((p) => !p);
   }, []);
@@ -102,8 +93,6 @@ export function useAudioPlayer() {
     setVolume,
     isMuted,
     toggleMute,
-    playbackRate,
-    setPlaybackRate,
     // Exposed so the teleprompter can read live currentTime/duration each
     // animation frame without subscribing to React state (which only
     // updates a few times a second via `timeupdate`).
