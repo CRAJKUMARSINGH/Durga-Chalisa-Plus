@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { durgaChalisa } from '@/data/durga-chalisa';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
-import { useAutoScroll } from '@/hooks/use-auto-scroll';
+import { useSyncedScroll } from '@/hooks/use-synced-scroll';
 import { useSearch } from '@/hooks/use-search';
 import { useTheme } from '@/hooks/use-theme';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { 
   Play, Pause, Volume2, VolumeX, Sun, Moon, 
-  Search, Settings2, SkipBack, SkipForward, ArrowUpCircle, ArrowDownCircle
+  Search, Settings2, LocateFixed
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,27 +27,21 @@ export default function ChalisaReader() {
     volume, 
     setVolume, 
     isMuted, 
-    toggleMute 
+    toggleMute,
+    playbackRate,
+    setPlaybackRate,
+    audioRef,
   } = useAudioPlayer();
 
-  const { 
-    isAutoScrolling, 
-    toggleAutoScroll, 
-    speed, 
-    setSpeed, 
-    direction, 
-    toggleDirection 
-  } = useAutoScroll(scrollRef);
+  // The teleprompter's scroll position is derived directly from the audio's
+  // live playback position, so speed changes (via playbackRate) and the
+  // scroll always stay perfectly in sync -- no independent timer to drift.
+  const { isFollowing, resync } = useSyncedScroll(scrollRef, audioRef, audioPlaying);
 
   const { query, setQuery, results } = useSearch();
 
-  const isPlaying = audioPlaying || isAutoScrolling;
-
-  const togglePlayback = () => {
-    const next = !isPlaying;
-    if (next !== audioPlaying) toggleAudio();
-    if (next !== isAutoScrolling) toggleAutoScroll();
-  };
+  const isPlaying = audioPlaying;
+  const togglePlayback = toggleAudio;
 
   // Highlight effect clear
   useEffect(() => {
@@ -209,17 +203,19 @@ export default function ChalisaReader() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={toggleDirection}
-                className="h-8 w-8 rounded-full text-foreground hover:bg-muted shrink-0"
-                aria-label={direction === 1 ? 'Scrolling forward — switch to reverse' : 'Scrolling in reverse — switch to forward'}
+                onClick={resync}
+                disabled={isFollowing}
+                className="h-8 w-8 rounded-full text-foreground hover:bg-muted shrink-0 disabled:opacity-30"
+                aria-label="Resync teleprompter to the chant"
+                title="स्क्रॉल को आरती से फिर मिलाएं"
               >
-                {direction === 1 ? <ArrowDownCircle className="w-5 h-5 text-primary" /> : <ArrowUpCircle className="w-5 h-5" />}
+                <LocateFixed className={cn("w-5 h-5", !isFollowing && "text-primary animate-pulse")} />
               </Button>
               <span className="text-xs text-muted-foreground shrink-0">गति</span>
               <Slider
-                value={[speed]}
-                onValueChange={([v]) => setSpeed(v)}
-                min={0.5} max={3} step={0.1}
+                value={[playbackRate]}
+                onValueChange={([v]) => setPlaybackRate(v)}
+                min={0.5} max={2} step={0.1}
                 className="flex-1"
               />
               <div className="flex items-center gap-1.5 shrink-0 w-20">
@@ -235,6 +231,20 @@ export default function ChalisaReader() {
 
         </div>
       </div>
+
+      {/* Floating hint + shortcut back to the synced position while the reader is scrolling freely */}
+      {audioPlaying && !isFollowing && (
+        <button
+          onClick={resync}
+          className={cn(
+            "absolute right-4 z-30 flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground shadow-lg text-sm font-semibold transition-all hover:brightness-110 active:scale-95",
+            showControls ? "bottom-[15.5rem] md:bottom-64" : "bottom-6"
+          )}
+        >
+          <LocateFixed className="w-4 h-4" />
+          लय में लौटें
+        </button>
+      )}
 
     </div>
   );
