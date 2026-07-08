@@ -12,11 +12,6 @@ export function useAudioPlayer() {
   const [progress, setProgress] = useState(0); // 0 to 1
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // Refs mirror the latest state so long-lived event listeners never read stale closures.
-  const isPlayingRef = useRef(isPlaying);
-  useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
 
   // Initialize the audio element once.
   useEffect(() => {
@@ -37,23 +32,15 @@ export function useAudioPlayer() {
       setProgress(0);
     };
 
-    const handlePause = () => {
-      // Keep React state in sync if playback stops for a reason we didn't initiate
-      // (e.g. a play() promise rejection, or the browser pausing background audio).
-      if (isPlayingRef.current) setIsPlaying(false);
-    };
-
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('loadedmetadata', updateProgress);
     audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('pause', handlePause);
 
     return () => {
       audio.pause();
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('loadedmetadata', updateProgress);
       audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('pause', handlePause);
       audioRef.current = null;
     };
   }, []);

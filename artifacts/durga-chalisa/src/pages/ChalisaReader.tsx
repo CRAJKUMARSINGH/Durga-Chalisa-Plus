@@ -49,15 +49,6 @@ export default function ChalisaReader() {
     if (next !== isAutoScrolling) toggleAutoScroll();
   };
 
-  // If audio playback stops on its own (e.g. the browser rejected the play()
-  // promise), stop the teleprompter too so the two never drift out of sync.
-  useEffect(() => {
-    if (!audioPlaying && isAutoScrolling) {
-      toggleAutoScroll();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioPlaying]);
-
   // Highlight effect clear
   useEffect(() => {
     if (activeHighlightId === null) return;
