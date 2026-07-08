@@ -1,0 +1,2 @@
+- [Vite CSS @import ordering](vite-css-import-order.md) — Google Fonts `@import url(...)` in a Tailwind v4 `index.css` must come before `@plugin` lines, or move it to `index.html` `<link>` instead.
+- [Unified audio+scroll player pattern](unified-media-teleprompter-sync.md) — driving two independent hooks (audio, auto-scroll) from one play button needs an explicit resync effect for failure paths.

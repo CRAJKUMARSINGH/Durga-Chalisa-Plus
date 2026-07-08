@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "-xNTHmpv63ZC4MPvRQA7o"
+uri = "file://attached_assets/generated_audio/durga_chalisa_part1.mp3"
+type = "audio"
+title = "durga_chalisa_devotional_part1"
+
+[[outputs]]
+id = "cf5LGg1ryEsnFL3zsOrMd"
+uri = "file://attached_assets/generated_audio/durga_chalisa_part2.mp3"
+type = "audio"
+title = "durga_chalisa_devotional_part2"
