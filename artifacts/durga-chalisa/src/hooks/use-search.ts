@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { durgaChalisa } from '@/data/durga-chalisa';
+import type { VerseLine } from '@/data/hindi-aarti';
 
-export function useSearch() {
+export function useSearch(verses: VerseLine[]) {
   const [query, setQuery] = useState('');
   
   const results = useMemo(() => {
@@ -12,13 +12,13 @@ export function useSearch() {
     const isNumber = /^\d+$/.test(q);
     if (isNumber) {
       const num = parseInt(q, 10);
-      const match = durgaChalisa.find(v => v.id === num);
+      const match = verses.find(v => v.id === num);
       return match ? [match] : [];
     }
 
     // Otherwise search text
-    return durgaChalisa.filter(v => v.text.includes(q));
-  }, [query]);
+    return verses.filter(v => v.text.toLowerCase().includes(q));
+  }, [query, verses]);
 
   return {
     query,

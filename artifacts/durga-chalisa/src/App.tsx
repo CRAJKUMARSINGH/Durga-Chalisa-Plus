@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NotFound from '@/pages/not-found';
 import ChalisaReader from '@/pages/ChalisaReader';
+import LandingPage from '@/pages/LandingPage';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
@@ -8,7 +9,8 @@ const queryClient = new QueryClient();
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={ChalisaReader} />
+      <Route path="/" component={LandingPage} />
+      <Route path="/reader" component={ChalisaReader} />
       <Route component={NotFound} />
     </Switch>
   );
