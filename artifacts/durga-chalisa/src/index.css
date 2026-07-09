@@ -129,3 +129,50 @@
     scrollbar-width: none;
   }
 }
+
+@layer utilities {
+  /* Running devotional ticker (imported style from Sundarkand teleprompter) */
+  .marquee {
+    display: inline-block;
+    white-space: nowrap;
+    will-change: transform;
+    animation: marquee-scroll 32s linear infinite;
+  }
+  @keyframes marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Slow float for hero ornaments */
+  .float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+  @keyframes float-slow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee,
+    .float-slow {
+      animation: none;
+    }
+  }
+
+  /* Devotional gold gradient text */
+  .text-gold-gradient {
+    background: linear-gradient(90deg, hsl(35 92% 52%), hsl(28 90% 45%), hsl(43 85% 58%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}

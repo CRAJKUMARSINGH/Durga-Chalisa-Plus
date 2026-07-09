@@ -46,16 +46,16 @@ const segmentData = {
 };
 
 const segmentButtons: { id: SegmentType; label: string }[] = [
-  { id: 'vishwambhari', label: 'विश्वंभरी' },
   { id: 'durga-chalisa', label: 'दुर्गा चालीसा' },
   { id: 'hindi-aarti', label: 'आद्या शक्ति' },
+  { id: 'vishwambhari', label: 'विश्वंभरी' },
 ];
 
 export default function ChalisaReader() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
   const [activeHighlightId, setActiveHighlightId] = useState<number | null>(null);
-  const [currentSegment, setCurrentSegment] = useState<SegmentType>('vishwambhari');
+  const [currentSegment, setCurrentSegment] = useState<SegmentType>('durga-chalisa');
 
   const { theme, toggleTheme } = useTheme();
   const {
@@ -203,26 +203,6 @@ export default function ChalisaReader() {
               {verse.text}
             </div>
           ))}
-
-          <div className="mt-20 border-t-2 border-primary/30 pt-8 text-sm text-muted-foreground">
-            <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-primary/50">
-              <img src="/author.jpg" alt="राजकुमार अरथुना" className="h-full w-full object-cover" />
-            </div>
-            <p>An effort by humble Rambhakt-</p>
-            <p className="mt-1 font-serif text-xl font-bold text-foreground">राजकुमार अरथुना</p>
-            <p className="mt-2 font-serif text-primary">🌺 🙏 सीताराम 🙏 🌺</p>
-            <p className="mt-4 text-xs">
-              Inspired by{' '}
-              <a
-                href="https://sundarkand-display.netlify.app/"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-primary hover:underline"
-              >
-                Sundarkand Display
-              </a>
-            </p>
-          </div>
         </div>
       </main>
 
