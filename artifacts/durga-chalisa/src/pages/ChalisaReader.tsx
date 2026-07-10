@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { durgaChalisaHindi, hindiAarti, vishwambhariHindi } from '@/data/hindi-aarti';
-import { useAudioPlayer } from '@/hooks/use-audio-player';
+import { useAudioPlayer, type AudioSegment } from '@/hooks/use-audio-player';
 import { useSyncedScroll } from '@/hooks/use-synced-scroll';
 import { useSearch } from '@/hooks/use-search';
 import { useTheme } from '@/hooks/use-theme';
@@ -30,6 +30,18 @@ const formatTime = (seconds: number): string => {
 
 type SegmentType = 'vishwambhari' | 'durga-chalisa' | 'hindi-aarti';
 
+/**
+ * jay_adhyashakti_aarti.mp3 track layout (user-confirmed):
+ *   0:00  →  15:04  (904s)  = Jay Adhyashakti Aarti
+ *   15:04 →  16:36  (996s)  = Karpura Gauram mantra (intro to Vishwambhari)
+ *   16:36 →  end            = Vishwambhari Stuti
+ *
+ * Vishwambhari segment starts at 15:04 (904s) to include Karpura Gauram
+ * as its opening mantra, matching the docx structure.
+ */
+const AARTI_END_SEC     = 904;  // 15:04
+const VISHWAMBHARI_START_SEC = 904;  // 15:04 (Karpura Gauram + Vishwambhari)
+
 const segmentData = {
   vishwambhari: {
     verses: vishwambhariHindi,
@@ -37,6 +49,7 @@ const segmentData = {
     audioLabel: 'विश्वंभरी / माम् पाहि',
     searchPlaceholder: 'खोजें: शब्द या पंक्ति संख्या',
     audioUrl: '/assets/jay_adhyashakti_aarti.mp3',
+    audioSegment: { startTime: VISHWAMBHARI_START_SEC, endTime: undefined },
   },
   'durga-chalisa': {
     verses: durgaChalisaHindi,
@@ -44,6 +57,7 @@ const segmentData = {
     audioLabel: 'श्री दुर्गा चालीसा',
     searchPlaceholder: 'खोजें: शब्द या पंक्ति संख्या',
     audioUrl: '/assets/durga_chalisa_original.mp3',
+    audioSegment: { startTime: 0, endTime: undefined },
   },
   'hindi-aarti': {
     verses: hindiAarti,
@@ -51,6 +65,7 @@ const segmentData = {
     audioLabel: 'जय आद्या शक्ति आरती',
     searchPlaceholder: 'खोजें: शब्द या पंक्ति संख्या',
     audioUrl: '/assets/jay_adhyashakti_aarti.mp3',
+    audioSegment: { startTime: 0, endTime: AARTI_END_SEC },
   },
 };
 
@@ -81,7 +96,7 @@ export default function ChalisaReader() {
     audioRef,
     currentTime,
     duration,
-  } = useAudioPlayer(currentData.audioUrl);
+  } = useAudioPlayer(currentData.audioUrl, currentData.audioSegment);
 
   const { isFollowing, resync } = useSyncedScroll(scrollRef, audioRef, audioPlaying);
   const { query, setQuery, results } = useSearch(currentData.verses);
