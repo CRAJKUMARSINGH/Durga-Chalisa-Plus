@@ -98,7 +98,13 @@ export default function ChalisaReader() {
     duration,
   } = useAudioPlayer(currentData.audioUrl, currentData.audioSegment);
 
-  const { isFollowing, resync } = useSyncedScroll(scrollRef, audioRef, audioPlaying);
+  const { isFollowing, resync } = useSyncedScroll(
+    scrollRef,
+    audioRef,
+    audioPlaying,
+    currentData.verses,
+    currentData.audioSegment,
+  );
   const { query, setQuery, results } = useSearch(currentData.verses);
 
   useEffect(() => {
@@ -124,16 +130,23 @@ export default function ChalisaReader() {
 
     const update = () => {
       if (audio.duration > 0) {
-        const verses = currentData.verses.filter(v => v.type !== 'header');
-        const ratio = audio.currentTime / audio.duration;
-        const idx = Math.min(Math.floor(ratio * verses.length), verses.length - 1);
-        setAudioVerseIdx(verses[idx]?.id ?? null);
+        const seg = currentData.audioSegment;
+        const segStart = seg?.startTime ?? 0;
+        const segEnd   = seg?.endTime   ?? audio.duration;
+        const segDur   = Math.max(segEnd - segStart, 1);
+        const elapsed  = Math.max(0, audio.currentTime - segStart);
+        const ratio    = Math.min(elapsed / segDur, 1);
+
+        // Only count chantable lines (skip headers)
+        const chantable = currentData.verses.filter(v => v.type !== 'header');
+        const idx = Math.min(Math.floor(ratio * chantable.length), chantable.length - 1);
+        setAudioVerseIdx(chantable[idx]?.id ?? null);
       }
     };
 
     audio.addEventListener('timeupdate', update);
     return () => audio.removeEventListener('timeupdate', update);
-  }, [audioPlaying, audioRef, currentData.verses]);
+  }, [audioPlaying, audioRef, currentData.verses, currentData.audioSegment]);
 
   const scrollToLine = (id: number) => {
     const el = document.getElementById(`verse-${id}`);
