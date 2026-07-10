@@ -1,6 +1,6 @@
 [build]
-  command = "pnpm install && pnpm run build:netlify"
-  publish = "dist/public"
+  command = "cd artifacts/durga-chalisa && pnpm install && pnpm run build:netlify"
+  publish = "artifacts/durga-chalisa/dist/public"
 
 [build.environment]
   NODE_VERSION = "18"
