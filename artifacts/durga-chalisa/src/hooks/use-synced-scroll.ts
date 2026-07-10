@@ -1,19 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// How long to leave the teleprompter alone after the reader manually
-// scrolls, before it resumes following the chant automatically.
+// After a manual scroll, wait this long before auto-follow resumes.
 const RESUME_DELAY_MS = 4000;
 
 /**
- * Drives the teleprompter's scroll position directly from the audio's
- * current playback position (currentTime / duration), so the text always
- * matches the chant's actual (fixed, unmodified) speed, with no independent
- * timer that can drift out of sync.
+ * Verse-aware teleprompter sync.
  *
- * The reader can freely scroll up or down at any time (wheel, touch, drag).
- * A manual scroll pauses auto-follow for a few seconds so it doesn't fight
- * the reader's input, then quietly resumes -- or the reader can tap "resync"
- * to jump back immediately.
+ * Instead of mapping audio progress linearly to scrollHeight (which races
+ * ahead on short lines and lags on long ones), we:
+ *
+ *  1. Divide the audio duration evenly across the N verse elements that are
+ *     currently in the DOM (verse-0, verse-1, … verse-N-1).
+ *  2. Each frame, find which verse index corresponds to the current playback
+ *     time, measure that element's offsetTop, and smoothly scroll it into
+ *     the upper third of the viewport — exactly the way a teleprompter works.
+ *
+ * The reader can scroll freely at any time; auto-follow pauses for
+ * RESUME_DELAY_MS and then quietly picks up again from the correct verse.
  */
 export function useSyncedScroll(
   scrollContainerRef: React.RefObject<HTMLElement | null>,
@@ -25,23 +28,56 @@ export function useSyncedScroll(
   const lastAppliedTop = useRef<number | null>(null);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // RAF loop: while active and following, keep scrollTop matched to the
-  // audio's live progress ratio every frame for buttery-smooth motion.
+  // ── RAF loop ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isActive || !isFollowing) return;
 
     const tick = () => {
       const container = scrollContainerRef.current;
       const audio = audioRef.current;
+
       if (container && audio && audio.duration > 0) {
-        const maxScroll = container.scrollHeight - container.clientHeight;
-        if (maxScroll > 0) {
+        // Collect all verse elements currently rendered in this container.
+        const verses = Array.from(
+          container.querySelectorAll<HTMLElement>('[id^="verse-"]')
+        );
+
+        if (verses.length > 0) {
+          // Which verse should be "active" right now?
           const ratio = audio.currentTime / audio.duration;
-          const target = ratio * maxScroll;
-          lastAppliedTop.current = target;
-          container.scrollTop = target;
+          const rawIdx = ratio * verses.length;
+          const idx = Math.min(Math.floor(rawIdx), verses.length - 1);
+          const verse = verses[idx];
+
+          // Use getBoundingClientRect so we always measure relative to
+          // the viewport, then convert to an absolute scrollTop value.
+          const containerRect = container.getBoundingClientRect();
+          const verseRect = verse.getBoundingClientRect();
+
+          // Distance from current scroll position to where we want verse
+          // to sit (25% from top of the container = teleprompter sweet spot).
+          const delta =
+            verseRect.top - containerRect.top - container.clientHeight * 0.25;
+
+          const targetTop = container.scrollTop + delta;
+          const clamped = Math.max(
+            0,
+            Math.min(targetTop, container.scrollHeight - container.clientHeight)
+          );
+
+          lastAppliedTop.current = clamped;
+          container.scrollTop = clamped;
+        } else {
+          // Fallback: plain linear scroll if no verse elements found yet.
+          const maxScroll = container.scrollHeight - container.clientHeight;
+          if (maxScroll > 0) {
+            const target = (audio.currentTime / audio.duration) * maxScroll;
+            lastAppliedTop.current = target;
+            container.scrollTop = target;
+          }
         }
       }
+
       requestRef.current = requestAnimationFrame(tick);
     };
 
@@ -51,15 +87,14 @@ export function useSyncedScroll(
     };
   }, [isActive, isFollowing, scrollContainerRef, audioRef]);
 
-  // Detect reader-initiated scrolling (wheel, touch, keyboard, drag) and
-  // pause auto-follow so it never fights the reader's own input.
+  // ── Manual-scroll detection ───────────────────────────────────────────────
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
     const handleScroll = () => {
       const last = lastAppliedTop.current;
-      // Ignore the scroll event our own RAF loop just produced.
+      // Ignore scroll events our own RAF loop just produced.
       if (last != null && Math.abs(container.scrollTop - last) < 2) return;
 
       setIsFollowing(false);
@@ -76,10 +111,7 @@ export function useSyncedScroll(
     };
   }, [scrollContainerRef]);
 
-  // Every time playback starts (or stops), guarantee a clean, deterministic
-  // follow state: cancel any pending resume timer and re-enable following so
-  // pausing mid-way through the 4s "manual scroll" window can never strand
-  // isFollowing at false the next time the reader presses play.
+  // ── Reset following on play/pause ─────────────────────────────────────────
   useEffect(() => {
     if (resumeTimer.current) {
       clearTimeout(resumeTimer.current);
@@ -88,6 +120,7 @@ export function useSyncedScroll(
     setIsFollowing(true);
   }, [isActive]);
 
+  // ── Manual resync (button) ────────────────────────────────────────────────
   const resync = useCallback(() => {
     if (resumeTimer.current) clearTimeout(resumeTimer.current);
     setIsFollowing(true);

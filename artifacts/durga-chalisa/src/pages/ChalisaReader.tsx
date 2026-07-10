@@ -65,6 +65,7 @@ export default function ChalisaReader() {
   const [showControls, setShowControls] = useState(true);
   const [activeHighlightId, setActiveHighlightId] = useState<number | null>(null);
   const [currentSegment, setCurrentSegment] = useState<SegmentType>('vishwambhari');
+  const [audioVerseIdx, setAudioVerseIdx] = useState<number | null>(null);
 
   const { theme, toggleTheme } = useTheme();
   const currentData = segmentData[currentSegment];
@@ -94,10 +95,30 @@ export default function ChalisaReader() {
   useEffect(() => {
     setQuery('');
     setActiveHighlightId(null);
+    setAudioVerseIdx(null);
     if (scrollRef.current) {
       scrollRef.current.scrollTop = 0;
     }
   }, [currentSegment, setQuery]);
+
+  // Track which verse the audio is currently on for live highlighting.
+  useEffect(() => {
+    if (!audioPlaying) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const update = () => {
+      if (audio.duration > 0) {
+        const verses = currentData.verses;
+        const ratio = audio.currentTime / audio.duration;
+        const idx = Math.min(Math.floor(ratio * verses.length), verses.length - 1);
+        setAudioVerseIdx(verses[idx]?.id ?? null);
+      }
+    };
+
+    audio.addEventListener('timeupdate', update);
+    return () => audio.removeEventListener('timeupdate', update);
+  }, [audioPlaying, audioRef, currentData.verses]);
 
   const scrollToLine = (id: number) => {
     const el = document.getElementById(`verse-${id}`);
@@ -208,7 +229,11 @@ export default function ChalisaReader() {
                 verse.type === 'doha'
                   ? 'my-2 font-serif text-3xl font-bold leading-relaxed text-primary md:text-4xl'
                   : 'font-serif text-2xl font-semibold leading-loose text-foreground/90 md:text-3xl',
-                activeHighlightId === verse.id ? 'scale-[1.03] bg-primary/15 shadow-lg' : 'bg-transparent',
+                activeHighlightId === verse.id
+                  ? 'scale-[1.03] bg-primary/15 shadow-lg'
+                  : audioVerseIdx === verse.id
+                    ? 'bg-primary/10 text-foreground scale-[1.02] shadow-md'
+                    : 'bg-transparent',
               )}
             >
               {verse.text}
