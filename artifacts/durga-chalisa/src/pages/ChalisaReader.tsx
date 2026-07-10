@@ -22,6 +22,12 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 type SegmentType = 'vishwambhari' | 'durga-chalisa' | 'hindi-aarti';
 
 const segmentData = {
@@ -30,18 +36,21 @@ const segmentData = {
     title: 'विश्वंभरी स्तुति',
     audioLabel: 'विश्वंभरी / माम् पाहि',
     searchPlaceholder: 'खोजें: शब्द या पंक्ति संख्या',
+    audioUrl: '/assets/jay_adhyashakti_aarti.mp3',
   },
   'durga-chalisa': {
     verses: durgaChalisaHindi,
     title: 'श्री दुर्गा चालीसा',
     audioLabel: 'श्री दुर्गा चालीसा',
     searchPlaceholder: 'खोजें: शब्द या पंक्ति संख्या',
+    audioUrl: '/assets/durga_chalisa_original.mp3',
   },
   'hindi-aarti': {
     verses: hindiAarti,
     title: 'जय आद्या शक्ति आरती',
     audioLabel: 'जय आद्या शक्ति आरती',
     searchPlaceholder: 'खोजें: शब्द या पंक्ति संख्या',
+    audioUrl: '/assets/jay_adhyashakti_aarti.mp3',
   },
 };
 
@@ -58,6 +67,7 @@ export default function ChalisaReader() {
   const [currentSegment, setCurrentSegment] = useState<SegmentType>('vishwambhari');
 
   const { theme, toggleTheme } = useTheme();
+  const currentData = segmentData[currentSegment];
   const {
     isPlaying: audioPlaying,
     togglePlayPause: toggleAudio,
@@ -68,10 +78,11 @@ export default function ChalisaReader() {
     isMuted,
     toggleMute,
     audioRef,
-  } = useAudioPlayer();
+    currentTime,
+    duration,
+  } = useAudioPlayer(currentData.audioUrl);
 
   const { isFollowing, resync } = useSyncedScroll(scrollRef, audioRef, audioPlaying);
-  const currentData = segmentData[currentSegment];
   const { query, setQuery, results } = useSearch(currentData.verses);
 
   useEffect(() => {
@@ -273,6 +284,9 @@ export default function ChalisaReader() {
                 <div className="flex items-center justify-between gap-3">
                   <span className="truncate text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
                     {currentData.audioLabel}
+                  </span>
+                  <span className="text-xs font-mono text-muted-foreground">
+                    {formatTime(currentTime)} / {formatTime(duration)}
                   </span>
                   <Button
                     variant="ghost"

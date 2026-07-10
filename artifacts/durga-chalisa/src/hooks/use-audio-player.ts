@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import audioUrl from '@assets/generated_audio/durga_chalisa_original.mp3';
 
 /**
- * Plays the ~20-minute Durga Chalisa aarti recording as a single continuous
- * track, looping seamlessly back to the start when it ends.
+ * Plays the provided audio file as a single continuous track,
+ * looping seamlessly back to the start when it ends.
  */
-export function useAudioPlayer() {
+export function useAudioPlayer(audioUrl: string) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0); // 0 to 1
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -21,9 +22,11 @@ export function useAudioPlayer() {
     audioRef.current = audio;
 
     const updateProgress = () => {
-      const duration = audio.duration || 0;
-      if (duration > 0) {
-        setProgress(audio.currentTime / duration);
+      const dur = audio.duration || 0;
+      if (dur > 0) {
+        setProgress(audio.currentTime / dur);
+        setCurrentTime(audio.currentTime);
+        setDuration(dur);
       }
     };
 
@@ -93,6 +96,8 @@ export function useAudioPlayer() {
     setVolume,
     isMuted,
     toggleMute,
+    currentTime,
+    duration,
     // Exposed so the teleprompter can read live currentTime/duration each
     // animation frame without subscribing to React state (which only
     // updates a few times a second via `timeupdate`).
