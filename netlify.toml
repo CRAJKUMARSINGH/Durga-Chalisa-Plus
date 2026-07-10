@@ -6,36 +6,35 @@
   NODE_VERSION = "18"
   NPM_FLAGS = "--legacy-peer-deps"
 
-[[redirects]]
-  from = "/assets/*"
-  to = "/assets/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/favicon.svg"
-  to = "/favicon.svg"
-  status = 200
-
+# SPA fallback
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
   force = false
 
+# Security headers
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
+    X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# Immutable JS/CSS bundles
 [[headers]]
-  for = "*.js"
+  for = "/assets/*.js"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "*.css"
+  for = "/assets/*.css"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Audio files — long cache, allow range requests for scrubbing
+[[headers]]
+  for = "/assets/*.mp3"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Accept-Ranges = "bytes"

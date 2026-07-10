@@ -43,11 +43,17 @@ export function useSyncedScroll(
         );
 
         if (verses.length > 0) {
+          // Only sync to chantable lines (doha + chaupai), not headers/labels.
+          const chantVerses = verses.filter(
+            (el) => !el.classList.contains('verse-header')
+          );
+          const pool = chantVerses.length > 0 ? chantVerses : verses;
+
           // Which verse should be "active" right now?
           const ratio = audio.currentTime / audio.duration;
-          const rawIdx = ratio * verses.length;
-          const idx = Math.min(Math.floor(rawIdx), verses.length - 1);
-          const verse = verses[idx];
+          const rawIdx = ratio * pool.length;
+          const idx = Math.min(Math.floor(rawIdx), pool.length - 1);
+          const verse = pool[idx];
 
           // Use getBoundingClientRect so we always measure relative to
           // the viewport, then convert to an absolute scrollTop value.

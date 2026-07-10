@@ -124,7 +124,7 @@ export default function ChalisaReader() {
 
     const update = () => {
       if (audio.duration > 0) {
-        const verses = currentData.verses;
+        const verses = currentData.verses.filter(v => v.type !== 'header');
         const ratio = audio.currentTime / audio.duration;
         const idx = Math.min(Math.floor(ratio * verses.length), verses.length - 1);
         setAudioVerseIdx(verses[idx]?.id ?? null);
@@ -235,25 +235,41 @@ export default function ChalisaReader() {
             ॥ मातृशक्ति पाठ ॥
           </div>
 
-          {currentData.verses.map((verse) => (
-            <div
-              key={verse.id}
-              id={`verse-${verse.id}`}
-              className={cn(
-                'rounded-md px-3 py-3 transition-all duration-500 ease-out',
-                verse.type === 'doha'
-                  ? 'my-2 font-serif text-3xl font-bold leading-relaxed text-primary md:text-4xl'
-                  : 'font-serif text-2xl font-semibold leading-loose text-foreground/90 md:text-3xl',
-                activeHighlightId === verse.id
-                  ? 'scale-[1.03] bg-primary/15 shadow-lg'
-                  : audioVerseIdx === verse.id
-                    ? 'bg-primary/10 text-foreground scale-[1.02] shadow-md'
-                    : 'bg-transparent',
-              )}
-            >
-              {verse.text}
-            </div>
-          ))}
+          {currentData.verses.map((verse) => {
+            // For aarti verses that pack multiple phrases on one line (comma-separated),
+            // split them for display so each phrase gets its own line — easier to read
+            // and follow while singing. Doha refrain lines and headers stay as-is.
+            const displayParts =
+              verse.type === 'chaupai' && verse.text.includes(', ')
+                ? verse.text.split(', ')
+                : [verse.text];
+
+            return (
+              <div
+                key={verse.id}
+                id={`verse-${verse.id}`}
+                className={cn(
+                  'rounded-md px-3 py-2 transition-all duration-500 ease-out',
+                  verse.type === 'header'
+                    ? 'verse-header my-3 font-serif text-sm font-semibold uppercase tracking-widest text-primary/60'
+                    : verse.type === 'doha'
+                      ? 'my-3 font-serif text-2xl font-bold leading-relaxed text-primary md:text-3xl'
+                      : 'font-serif text-xl font-semibold leading-relaxed text-foreground/90 md:text-2xl',
+                  activeHighlightId === verse.id
+                    ? 'scale-[1.02] bg-primary/15 shadow-lg'
+                    : audioVerseIdx === verse.id && verse.type !== 'header'
+                      ? 'bg-primary/10 text-foreground shadow-md'
+                      : 'bg-transparent',
+                )}
+              >
+                {displayParts.map((part, i) => (
+                  <span key={i} className="block">
+                    {part}
+                  </span>
+                ))}
+              </div>
+            );
+          })}
 
           <div className="mt-20 border-t-2 border-primary/30 pt-8 text-sm text-muted-foreground">
             <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-primary/50">
