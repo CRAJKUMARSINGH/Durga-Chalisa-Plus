@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { durgaChalisaHindi, hindiAarti, vishwambhariHindi } from '@/data/hindi-aarti';
 import { useAudioPlayer, type AudioSegment } from '@/hooks/use-audio-player';
 import { useSyncedScroll } from '@/hooks/use-synced-scroll';
@@ -69,6 +69,9 @@ const segmentData = {
   },
 };
 
+// Playlist order — auto-advances through these segments when each ends.
+const PLAYLIST: SegmentType[] = ['hindi-aarti', 'durga-chalisa', 'vishwambhari'];
+
 const segmentButtons: { id: SegmentType; label: string }[] = [
   { id: 'vishwambhari', label: 'विश्वंभरी' },
   { id: 'durga-chalisa', label: 'दुर्गा चालीसा' },
@@ -84,6 +87,17 @@ export default function ChalisaReader() {
 
   const { theme, toggleTheme } = useTheme();
   const currentData = segmentData[currentSegment];
+
+  // Auto-advance to next segment in playlist when current one ends.
+  const handleSegmentEnd = useCallback(() => {
+    const idx = PLAYLIST.indexOf(currentSegment);
+    const next = PLAYLIST[idx + 1];
+    if (next) {
+      setCurrentSegment(next);
+    }
+    // If last segment, just stop — nothing loops.
+  }, [currentSegment]);
+
   const {
     isPlaying: audioPlaying,
     togglePlayPause: toggleAudio,
@@ -96,7 +110,7 @@ export default function ChalisaReader() {
     audioRef,
     currentTime,
     duration,
-  } = useAudioPlayer(currentData.audioUrl, currentData.audioSegment);
+  } = useAudioPlayer(currentData.audioUrl, currentData.audioSegment, handleSegmentEnd);
 
   const { isFollowing, resync } = useSyncedScroll(
     scrollRef,
@@ -121,8 +135,19 @@ export default function ChalisaReader() {
       scrollRef.current.scrollTop = 0;
     }
   }, [currentSegment, setQuery]);
-
-  // Track which verse the audio is currently on for live highlighting.
+  // When auto-advance fires, the new segment's useAudioPlayer starts paused.
+  // Auto-start it by toggling play after a brief tick.
+  const prevSegmentRef = useRef(currentSegment);
+  useEffect(() => {
+    if (prevSegmentRef.current !== currentSegment) {
+      prevSegmentRef.current = currentSegment;
+      // Small delay lets useAudioPlayer mount the new audio element first.
+      const t = setTimeout(() => {
+        toggleAudio(); // start playing the new segment
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [currentSegment, toggleAudio]);
   useEffect(() => {
     if (!audioPlaying) return;
     const audio = audioRef.current;

@@ -24,7 +24,11 @@ export interface AudioSegment {
  * file (e.g. Vishwambhari + Jay Adhyashakti in one mp3) while each segment
  * plays only its own slice and loops back to its own start.
  */
-export function useAudioPlayer(audioUrl: string, segment?: AudioSegment) {
+export function useAudioPlayer(
+  audioUrl: string,
+  segment?: AudioSegment,
+  onSegmentEnd?: () => void,
+) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
@@ -36,6 +40,9 @@ export function useAudioPlayer(audioUrl: string, segment?: AudioSegment) {
   // Store segment bounds in a ref so event handlers always see current values.
   const segmentRef = useRef(segment);
   segmentRef.current = segment;
+  // Store callback in ref so it never triggers a re-render or stale closure.
+  const onSegmentEndRef = useRef(onSegmentEnd);
+  onSegmentEndRef.current = onSegmentEnd;
 
   // Initialize the audio element once per URL.
   useEffect(() => {
@@ -54,9 +61,20 @@ export function useAudioPlayer(audioUrl: string, segment?: AudioSegment) {
       if (fullDur === 0) return;
       const { start, end, segDur } = getSegBounds(fullDur);
 
-      // If audio drifted past the segment end, loop back to segment start.
+      // If audio reached the segment end → fire callback (auto-advance) or loop.
       if (audio.currentTime >= end) {
-        audio.currentTime = start;
+        if (onSegmentEndRef.current) {
+          // Pause and reset so the next segment starts cleanly.
+          audio.pause();
+          audio.currentTime = start;
+          setIsPlaying(false);
+          setProgress(0);
+          setCurrentTime(0);
+          onSegmentEndRef.current();
+        } else {
+          // No callback — loop within the segment.
+          audio.currentTime = start;
+        }
         return;
       }
 
