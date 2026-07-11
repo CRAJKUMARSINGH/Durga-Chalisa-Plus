@@ -6,10 +6,11 @@ const RESUME_DELAY_MS = 4000;
 const LERP            = 0.07; // per-frame easing — smooth cinema glide
 
 // Time weight per verse type — how long each line "holds" relative to others.
-const WEIGHT: Record<VerseLine['type'], number> = {
-  chaupai: 1.0,
-  doha:    1.5, // refrains are sung slower
-  header:  0.0, // labels — not sung, excluded from time-map
+// chaupai weight is overridden per-segment via AudioSegment.chaupaiWeight.
+const BASE_WEIGHT: Record<VerseLine['type'], number> = {
+  chaupai: 1.0,  // default — overridden by segment.chaupaiWeight
+  doha:    1.5,  // refrains / dohas — sung slower, held longer
+  header:  0.0,  // section labels — not sung, excluded from time-map
 };
 
 /**
@@ -19,8 +20,13 @@ const WEIGHT: Record<VerseLine['type'], number> = {
  */
 function buildTimeMap(
   container: HTMLElement,
-  verses: VerseLine[]
+  verses: VerseLine[],
+  chaupaiWeight: number,
 ): Array<{ el: HTMLElement; startRatio: number; endRatio: number; offsetTop: number }> {
+  const WEIGHT: Record<VerseLine['type'], number> = {
+    ...BASE_WEIGHT,
+    chaupai: chaupaiWeight,
+  };
   const totalWeight = verses.reduce((s, v) => s + WEIGHT[v.type], 0);
   if (totalWeight === 0) return [];
 
@@ -29,7 +35,7 @@ function buildTimeMap(
 
   for (const v of verses) {
     const w = WEIGHT[v.type];
-    if (w === 0) continue; // skip headers
+    if (w === 0) continue;
     const el = container.querySelector<HTMLElement>(`#verse-${v.id}`);
     if (!el) continue;
     const start = cum / totalWeight;
@@ -71,7 +77,8 @@ export function useSyncedScroll(
       if (container && audio && audio.duration > 0) {
         // Build/refresh time-map (once per segment change, not every frame)
         if (!mapBuilt.current) {
-          timeMapRef.current = buildTimeMap(container, verses);
+          const cw = segment?.chaupaiWeight ?? 1.0;
+          timeMapRef.current = buildTimeMap(container, verses, cw);
           mapBuilt.current   = true;
         }
 

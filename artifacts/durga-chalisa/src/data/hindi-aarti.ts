@@ -13,7 +13,10 @@ const makeLines = (lyrics: string): VerseLine[] =>
     .map((text, id) => ({
       id,
       type: text.includes('ॐ जयो जयो') || text.includes('माम् पाहि') ? 'doha'
-          : text.startsWith('॥') || text.startsWith('●')                ? 'header'
+          : text.startsWith('॥') || text.startsWith('●')
+            || text.startsWith('या देवी')                // opening shloka — not in audio
+            || text.startsWith('नमस्तस्यै')              // opening shloka — not in audio
+            ? 'header'
           : 'chaupai',
       text,
     }));

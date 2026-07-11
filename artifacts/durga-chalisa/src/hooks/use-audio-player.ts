@@ -7,9 +7,15 @@ export interface AudioSegment {
   endTime?: number;
   /**
    * Seconds from segment start before scroll begins.
-   * Use this when the opening of a track is a prayer/mantra not present in the text.
+   * Use when the opening of a track is a prayer/mantra not present in the text.
    */
   scrollDelaySec?: number;
+  /**
+   * Weight per chaupai line for time-map calculation.
+   * Use 0.5 when chaupai lines come in pairs (e.g. Durga Chalisa — 2 lines = 1 sung couplet).
+   * Use 1.0 (default) when each line is an independent unit (Aarti, Vishwambhari).
+   */
+  chaupaiWeight?: number;
 }
 
 /**

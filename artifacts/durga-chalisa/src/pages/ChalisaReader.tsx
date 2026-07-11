@@ -57,7 +57,7 @@ const segmentData = {
     audioLabel: 'श्री दुर्गा चालीसा',
     searchPlaceholder: 'खोजें: शब्द या पंक्ति संख्या',
     audioUrl: '/assets/durga_chalisa_original.mp3',
-    audioSegment: { startTime: 0, endTime: undefined },
+    audioSegment: { startTime: 0, endTime: undefined, chaupaiWeight: 0.5 },
   },
   'hindi-aarti': {
     verses: hindiAarti,
