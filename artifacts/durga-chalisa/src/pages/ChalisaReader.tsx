@@ -49,7 +49,7 @@ const segmentData = {
     audioLabel: 'विश्वंभरी / माम् पाहि',
     searchPlaceholder: 'खोजें: शब्द या पंक्ति संख्या',
     audioUrl: '/assets/jay_adhyashakti_aarti.mp3',
-    audioSegment: { startTime: VISHWAMBHARI_START_SEC, endTime: undefined },
+    audioSegment: { startTime: VISHWAMBHARI_START_SEC, endTime: undefined, scrollDelaySec: 90 },
   },
   'durga-chalisa': {
     verses: durgaChalisaHindi,
@@ -285,23 +285,41 @@ export default function ChalisaReader() {
           })}
 
           <div className="mt-20 border-t-2 border-primary/30 pt-8 text-sm text-muted-foreground">
-            <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-primary/50">
-              <img src="/author.jpg" alt="राजकुमार अरथुना" className="h-full w-full object-cover" />
-            </div>
-            <p>An effort by humble Rambhakt-</p>
-            <p className="mt-1 font-serif text-xl font-bold text-foreground">राजकुमार अरथुना</p>
-            <p className="mt-2 font-serif text-primary">🌺 🙏 सीताराम 🙏 🌺</p>
-            <p className="mt-4 text-xs">
-              Inspired by{' '}
+            {/* Credits widget — Sundarkand Display .tp-credits style */}
+            <div style={{
+              display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+              padding: '1rem', border: '1px solid rgba(196,137,10,0.5)',
+              borderRadius: '8px', background: 'rgba(58,18,0,0.85)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            }}>
+              <img
+                src="/author.jpg"
+                alt="राजकुमार अरथुना"
+                style={{
+                  width: '72px', height: '72px', borderRadius: '50%',
+                  border: '2px solid #C4890A', objectFit: 'cover',
+                  marginBottom: '0.5rem',
+                  boxShadow: '0 2px 8px rgba(212,160,23,0.4)',
+                }}
+              />
+              <div style={{ fontSize: '0.72rem', color: '#F5E6A3', letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
+                An effort by a humble Rambhakt
+              </div>
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#FF6B00', textShadow: '0 2px 6px rgba(255,107,0,0.35)' }}>
+                राजकुमार अरथुना
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#D4A017', marginTop: '0.25rem' }}>
+                🌺 🙏 सीताराम 🙏 🌺
+              </div>
               <a
                 href="https://sundarkand-display.netlify.app/"
                 target="_blank"
                 rel="noreferrer"
-                className="font-medium text-primary hover:underline"
+                style={{ fontSize: '0.65rem', color: 'rgba(245,230,163,0.5)', marginTop: '0.5rem' }}
               >
-                Sundarkand Display
+                Inspired by Sundarkand Display ↗
               </a>
-            </p>
+            </div>
           </div>
         </div>
       </main>

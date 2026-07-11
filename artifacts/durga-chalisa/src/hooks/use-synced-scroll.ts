@@ -82,13 +82,26 @@ export function useSyncedScroll(
         }
 
         // Segment window
-        const segStart = segment?.startTime ?? 0;
-        const segEnd   = segment?.endTime   ?? audio.duration;
-        const segDur   = Math.max(segEnd - segStart, 1);
+        const segStart      = segment?.startTime    ?? 0;
+        const segEnd        = segment?.endTime      ?? audio.duration;
+        const scrollDelay   = segment?.scrollDelaySec ?? 0;
+        const segDur        = Math.max(segEnd - segStart, 1);
 
         // Progress [0..1] within this segment
         const elapsed = Math.max(0, audio.currentTime - segStart);
-        const ratio   = Math.min(elapsed / segDur, 1);
+
+        // Hold at top during the opening prayer/mantra (not in written text)
+        if (elapsed < scrollDelay) {
+          lastApplied.current = 0;
+          container.scrollTop = 0;
+          rafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+
+        // Map only the post-delay portion to the verses
+        const scrollable = Math.max(elapsed - scrollDelay, 0);
+        const scrollDur  = Math.max(segDur - scrollDelay, 1);
+        const ratio      = Math.min(scrollable / scrollDur, 1);
 
         // Find active verse
         let activeIdx = 0;

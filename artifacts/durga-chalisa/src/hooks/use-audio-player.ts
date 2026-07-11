@@ -5,6 +5,11 @@ export interface AudioSegment {
   startTime?: number;
   /** Absolute end time in seconds within the audio file (default: full duration) */
   endTime?: number;
+  /**
+   * Seconds from segment start before scroll begins.
+   * Use this when the opening of a track is a prayer/mantra not present in the text.
+   */
+  scrollDelaySec?: number;
 }
 
 /**
