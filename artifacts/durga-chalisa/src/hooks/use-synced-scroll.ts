@@ -3,21 +3,14 @@ import type { VerseLine } from '@/data/hindi-aarti';
 import type { AudioSegment } from '@/hooks/use-audio-player';
 
 const RESUME_DELAY_MS = 4000;
-const LERP            = 0.07; // per-frame easing — smooth cinema glide
+const LERP            = 0.07;
 
-// Time weight per verse type — how long each line "holds" relative to others.
-// chaupai weight is overridden per-segment via AudioSegment.chaupaiWeight.
 const BASE_WEIGHT: Record<VerseLine['type'], number> = {
-  chaupai: 1.0,  // default — overridden by segment.chaupaiWeight
-  doha:    1.5,  // refrains / dohas — sung slower, held longer
-  header:  0.0,  // section labels — not sung, excluded from time-map
+  chaupai: 1.0,
+  doha:    1.5,
+  header:  0.0,
 };
 
-/**
- * Pre-computes a time-map once when verses or DOM settle.
- * Returns array of { el, startRatio, endRatio } for chantable verses only.
- * Uses offsetTop (layout-stable) not getBoundingClientRect (scroll-dependent).
- */
 function buildTimeMap(
   container: HTMLElement,
   verses: VerseLine[],
@@ -41,7 +34,15 @@ function buildTimeMap(
     const start = cum / totalWeight;
     cum += w;
     const end = cum / totalWeight;
-    map.push({ el, startRatio: start, endRatio: end, offsetTop: el.offsetTop });
+    // offsetTop is relative to offsetParent — we need absolute position
+    // within the scroll container. Walk up to get accurate position.
+    let top = el.offsetTop;
+    let parent = el.offsetParent as HTMLElement | null;
+    while (parent && parent !== container) {
+      top += parent.offsetTop;
+      parent = parent.offsetParent as HTMLElement | null;
+    }
+    map.push({ el, startRatio: start, endRatio: end, offsetTop: top });
   }
   return map;
 }
@@ -54,16 +55,17 @@ export function useSyncedScroll(
   segment?: AudioSegment,
 ) {
   const [isFollowing, setIsFollowing] = useState(true);
-  const rafRef      = useRef<number | null>(null);
-  const lastApplied = useRef<number | null>(null);
-  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Cache the time-map — rebuild only when segment/verses change, not every frame.
-  const timeMapRef  = useRef<ReturnType<typeof buildTimeMap>>([]);
-  const mapBuilt    = useRef(false);
+  const rafRef       = useRef<number | null>(null);
+  const lastApplied  = useRef<number | null>(null);
+  const resumeTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timeMapRef   = useRef<ReturnType<typeof buildTimeMap>>([]);
+  // Use a counter: increment to trigger a rebuild after DOM settles.
+  const rebuildGen   = useRef(0);
+  const builtGen     = useRef(-1);
 
-  // Rebuild time-map when segment or verses change (after DOM renders).
+  // Mark time-map stale whenever verses or segment change.
   useEffect(() => {
-    mapBuilt.current = false; // signal RAF to rebuild on next tick
+    rebuildGen.current += 1;
   }, [verses, segment]);
 
   // ── RAF loop ──────────────────────────────────────────────────────────────
@@ -75,11 +77,21 @@ export function useSyncedScroll(
       const audio     = audioRef.current;
 
       if (container && audio && audio.duration > 0) {
-        // Build/refresh time-map (once per segment change, not every frame)
-        if (!mapBuilt.current) {
-          const cw = segment?.chaupaiWeight ?? 1.0;
-          timeMapRef.current = buildTimeMap(container, verses, cw);
-          mapBuilt.current   = true;
+
+        // Rebuild time-map when stale — but only AFTER scroll has reset to 0
+        // (i.e. container.scrollTop is near 0), so offsetTop values are accurate.
+        if (builtGen.current !== rebuildGen.current) {
+          // Wait until the container is scrolled to top (segment reset happened)
+          if (container.scrollTop < 10) {
+            const cw = segment?.chaupaiWeight ?? 1.0;
+            timeMapRef.current = buildTimeMap(container, verses, cw);
+            builtGen.current   = rebuildGen.current;
+          } else {
+            // Not reset yet — keep scrollTop moving toward 0 and try next frame
+            container.scrollTop = Math.max(0, container.scrollTop - 60);
+            rafRef.current = requestAnimationFrame(tick);
+            return;
+          }
         }
 
         const map = timeMapRef.current;
@@ -89,15 +101,13 @@ export function useSyncedScroll(
         }
 
         // Segment window
-        const segStart      = segment?.startTime    ?? 0;
-        const segEnd        = segment?.endTime      ?? audio.duration;
-        const scrollDelay   = segment?.scrollDelaySec ?? 0;
-        const segDur        = Math.max(segEnd - segStart, 1);
+        const segStart    = segment?.startTime      ?? 0;
+        const segEnd      = segment?.endTime        ?? audio.duration;
+        const scrollDelay = segment?.scrollDelaySec ?? 0;
+        const segDur      = Math.max(segEnd - segStart, 1);
+        const elapsed     = Math.max(0, audio.currentTime - segStart);
 
-        // Progress [0..1] within this segment
-        const elapsed = Math.max(0, audio.currentTime - segStart);
-
-        // Hold at top during the opening prayer/mantra (not in written text)
+        // Hold at top during opening prayer (not in written text)
         if (elapsed < scrollDelay) {
           lastApplied.current = 0;
           container.scrollTop = 0;
@@ -105,8 +115,8 @@ export function useSyncedScroll(
           return;
         }
 
-        // Map only the post-delay portion to the verses
-        const scrollable = Math.max(elapsed - scrollDelay, 0);
+        // Map post-delay audio time to verse positions
+        const scrollable = elapsed - scrollDelay;
         const scrollDur  = Math.max(segDur - scrollDelay, 1);
         const ratio      = Math.min(scrollable / scrollDur, 1);
 
@@ -119,28 +129,22 @@ export function useSyncedScroll(
         const active = map[activeIdx];
         const next   = map[activeIdx + 1];
 
-        // How far within this verse [0..1]
+        // Within-verse interpolation
         const span        = active.endRatio - active.startRatio;
-        const withinVerse = span > 0
-          ? Math.min((ratio - active.startRatio) / span, 1)
-          : 0;
+        const withinVerse = span > 0 ? Math.min((ratio - active.startRatio) / span, 1) : 0;
 
-        // Interpolate offsetTop between active and next verse
-        // offsetTop is stable (layout), safe to use in RAF
         const activeOffsetTop = active.offsetTop;
         const nextOffsetTop   = next ? next.offsetTop : activeOffsetTop;
         const interpOffsetTop = activeOffsetTop + (nextOffsetTop - activeOffsetTop) * withinVerse;
 
-        // Place active verse at 28% from top (teleprompter sweet-spot)
+        // Teleprompter sweet-spot: active verse at 28% from top
         const sweetSpot = container.clientHeight * 0.28;
         const rawTarget = interpOffsetTop - sweetSpot;
         const maxScroll = container.scrollHeight - container.clientHeight;
         const target    = Math.max(0, Math.min(rawTarget, maxScroll));
 
         // Smooth lerp
-        const current = container.scrollTop;
-        const next_st = current + (target - current) * LERP;
-
+        const next_st = container.scrollTop + (target - container.scrollTop) * LERP;
         lastApplied.current = next_st;
         container.scrollTop = next_st;
       }

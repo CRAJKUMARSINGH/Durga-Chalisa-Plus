@@ -194,7 +194,7 @@ export default function LandingPage() {
             >
               <img src="/author.jpg" alt="राजकुमार अरथुना" className="h-full w-full object-cover" loading="lazy" />
             </div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#F5E6A3]/60">An effort by humble Rambhakt-</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#F5E6A3]/60">An effort by humble bhakt-</p>
             <h3 className="mt-2 text-3xl font-bold sm:text-4xl" style={{ color: '#FF6B00', textShadow: '0 2px 6px rgba(255,107,0,0.35)' }}>
               राजकुमार अरथुना
             </h3>

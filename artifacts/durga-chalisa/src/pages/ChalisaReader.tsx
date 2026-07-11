@@ -328,7 +328,7 @@ export default function ChalisaReader() {
                 }}
               />
               <div style={{ fontSize: '0.72rem', color: '#F5E6A3', letterSpacing: '0.08em', marginBottom: '0.2rem' }}>
-                An effort by a humble Rambhakt
+                An effort by humble bhakt
               </div>
               <div style={{ fontSize: '1rem', fontWeight: 700, color: '#FF6B00', textShadow: '0 2px 6px rgba(255,107,0,0.35)' }}>
                 राजकुमार अरथुना

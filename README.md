@@ -3,7 +3,7 @@
 Devotional teleprompter for **जय आद्या शक्ति**, **श्री दुर्गा चालीसा**, and **विश्वंभरी स्तुति** — with synchronized audio scroll, live verse highlight, search, and dark/light mode. Inspired by [Sundarkand Display](https://sundarkand-display.netlify.app/).
 
 **Live:** https://durga-chalisa-plus.netlify.app  
-**Author:** राजकुमार अरथुना — An effort by a humble Rambhakt 🌺 🙏 सीताराम 🙏 🌺
+**Author:** राजकुमार अरथुना — An effort by humble bhakt 🌺 🙏 सीताराम 🙏 🌺
 
 ---
 
