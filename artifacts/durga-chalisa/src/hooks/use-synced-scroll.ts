@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { VerseLine } from '@/data/hindi-aarti';
 import type { AudioSegment } from '@/hooks/use-audio-player';
 
-const RESUME_DELAY_MS = 4000;
-const LERP            = 0.07;
+const RESUME_DELAY_MS = 5000;   // give user more time before re-locking
+const LERP            = 0.06;   // slightly gentler lerp to avoid jitter
 
 const BASE_WEIGHT: Record<VerseLine['type'], number> = {
   chaupai: 1.0,
@@ -176,10 +176,17 @@ export function useSyncedScroll(
     };
   }, [scrollContainerRef]);
 
-  // ── Reset on play/pause ───────────────────────────────────────────────────
+  // ── Reset on play (not on pause) ─────────────────────────────────────────
+  const prevActiveRef = useRef(isActive);
   useEffect(() => {
-    if (resumeTimer.current) { clearTimeout(resumeTimer.current); resumeTimer.current = null; }
-    setIsFollowing(true);
+    const wasActive = prevActiveRef.current;
+    prevActiveRef.current = isActive;
+    // Only snap back to following when playback *starts* (false→true),
+    // not when it stops. This prevents scroll jumping when user pauses.
+    if (!wasActive && isActive) {
+      if (resumeTimer.current) { clearTimeout(resumeTimer.current); resumeTimer.current = null; }
+      setIsFollowing(true);
+    }
   }, [isActive]);
 
   // ── Resync button ─────────────────────────────────────────────────────────

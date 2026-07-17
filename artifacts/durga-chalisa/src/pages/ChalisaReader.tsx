@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { durgaChalisaHindi, hindiAarti, vishwambhariHindi } from '@/data/hindi-aarti';
+import { durgaChalisaHindi, hindiAarti, vishwambhariHindi, karpurGauravHindi, sarvMangalHindi, twamevMataHindi } from '@/data/hindi-aarti';
 import { useAudioPlayer, type AudioSegment } from '@/hooks/use-audio-player';
 import { useSyncedScroll } from '@/hooks/use-synced-scroll';
 import { useSearch } from '@/hooks/use-search';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import {
   ArrowLeft,
   BookOpen,
+  Download,
   LocateFixed,
   Moon,
   Pause,
@@ -27,6 +28,69 @@ const formatTime = (seconds: number): string => {
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
+
+/** Build a printable HTML page with all lyrics and open the print dialog */
+function downloadCombinedPDF() {
+  const sections = [
+    { title: 'कर्पूर गौरं', verses: karpurGauravHindi },
+    { title: 'सर्व मंगल मांगल्ये', verses: sarvMangalHindi },
+    { title: 'त्वमेव माता', verses: twamevMataHindi },
+    { title: 'विश्वंभरी स्तुति', verses: vishwambhariHindi },
+    { title: 'जय आद्या शक्ति आरती', verses: hindiAarti },
+    { title: 'श्री दुर्गा चालीसा', verses: durgaChalisaHindi },
+  ];
+
+  const body = sections.map(({ title, verses }) => {
+    const lines = verses.map(v => {
+      if (v.type === 'header') return `<p class="header">${v.text}</p>`;
+      if (v.type === 'doha')   return `<p class="doha">${v.text}</p>`;
+      return `<p class="chaupai">${v.text}</p>`;
+    }).join('');
+    return `<div class="section"><h2>${title}</h2>${lines}</div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"/>
+<title>Durga Chalisa Plus — संपूर्ण पाठ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@400;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Serif Devanagari', serif; background: #fff; color: #1a0a00; padding: 2cm; }
+  h1  { text-align: center; font-size: 22pt; color: #8B1A00; margin-bottom: 0.3cm; }
+  .subtitle { text-align: center; font-size: 11pt; color: #7a5000; margin-bottom: 1cm; }
+  .section { margin-bottom: 1cm; page-break-inside: avoid; }
+  h2  { font-size: 15pt; color: #8B1A00; border-bottom: 1px solid #c4890a; margin-bottom: 0.3cm; padding-bottom: 0.1cm; }
+  p   { font-size: 12pt; line-height: 1.9; text-align: center; }
+  .header  { font-size: 10pt; color: #7a5000; letter-spacing: 0.1em; margin: 0.3cm 0; }
+  .doha    { font-size: 13pt; font-weight: 700; color: #8B1A00; margin: 0.25cm 0; }
+  .chaupai { font-size: 12pt; margin: 0.1cm 0; }
+  .footer  { text-align: center; font-size: 9pt; color: #aaa; margin-top: 1cm; border-top: 1px solid #eee; padding-top: 0.3cm; }
+  @media print { body { padding: 1.5cm; } }
+</style>
+</head>
+<body>
+<h1>🌺 दुर्गा चालीसा प्लस 🌺</h1>
+<div class="subtitle">संपूर्ण पाठ संग्रह — राजकुमार अरथुना</div>
+${body}
+<div class="footer">Durga Chalisa Plus &nbsp;|&nbsp; 🙏 सीताराम 🙏</div>
+<script>window.onload = () => { window.print(); }<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (!win) {
+    // fallback: direct download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'durga-chalisa-plus.html';
+    a.click();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
 
 type SegmentType = 'vishwambhari' | 'durga-chalisa' | 'hindi-aarti';
 
@@ -229,6 +293,16 @@ export default function ChalisaReader() {
                 {item.label}
               </Button>
             ))}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={downloadCombinedPDF}
+              className="h-9 w-9 rounded-full"
+              aria-label="संपूर्ण पाठ PDF डाउनलोड करें"
+              title="संपूर्ण पाठ PDF डाउनलोड करें"
+            >
+              <Download className="h-5 w-5" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
