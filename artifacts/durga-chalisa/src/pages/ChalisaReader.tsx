@@ -153,13 +153,11 @@ export default function ChalisaReader() {
   const currentData = segmentData[currentSegment];
 
   // Auto-advance to next segment in playlist when current one ends.
+  // Wraps around from last segment back to first for continuous play.
   const handleSegmentEnd = useCallback(() => {
     const idx = PLAYLIST.indexOf(currentSegment);
-    const next = PLAYLIST[idx + 1];
-    if (next) {
-      setCurrentSegment(next);
-    }
-    // If last segment, just stop — nothing loops.
+    const next = PLAYLIST[(idx + 1) % PLAYLIST.length];
+    setCurrentSegment(next);
   }, [currentSegment]);
 
   const {
